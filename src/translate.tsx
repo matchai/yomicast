@@ -1,12 +1,23 @@
 import { List } from "@raycast/api";
-import { LocalStorage } from "./local-storage";
-import { useCachedState } from "@raycast/utils";
+import { getDictionary } from "./lib";
+import { useState } from "react";
+import { FuzzyWord } from "js-mdict";
 
 export default function Command() {
-  const [dictionaryReady, setDictionaryReady] = useCachedState(
-    "dictionary-ready",
-    LocalStorage.getItem("isDictionaryReady"),
-  );
+  const [items, setItems] = useState<FuzzyWord[]>([]);
+  getDictionary();
 
-  return <List navigationTitle="Translate Japanese" searchBarPlaceholder="Search Yomicast..."></List>;
+  function onSearchTextChange(searchText: string) {
+    // const result = getDictionary().fuzzy_search(searchText, 5, 5);
+    // console.log("Search results:", result);
+    // setItems(result);
+  }
+
+  return (
+    <List
+      navigationTitle="Translate Japanese"
+      searchBarPlaceholder="Search Yomicast..."
+      onSearchTextChange={onSearchTextChange}
+    ></List>
+  );
 }
