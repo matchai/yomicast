@@ -2,25 +2,30 @@ import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
-import { showToast, Toast } from "@raycast/api";
+import { environment, showToast, Toast } from "@raycast/api";
 import yauzl from "yauzl";
-import { LocalStorage } from "./local-storage";
-import { DICTIONARY_PATH, DOWNLOAD_PATH } from "./lib";
+import { DICTIONARY_PATH, DICTIONARY_URL, DOWNLOAD_PATH } from "./lib";
 
 export default async function Command() {
   await updateDictionary();
 }
 
-export async function updateDictionary() {
-  const dictionaryUrl = "https://github.com/stephenmk/stephenmk.github.io/releases/latest/download/jitendex-mdict.zip";
-
+async function updateDictionary() {
   const toast = await showToast({
     style: Toast.Style.Animated,
     title: "Downloading latest dictionary...",
     message: `Progress: 0%`,
   });
+
+  await downloadDictionary(toast);
+  await extractDictionary(toast);
+  console.log(environment.supportPath);
+  // await importDictionary(toast);
+}
+
+async function downloadDictionary(toast: Toast) {
   try {
-    const res = await fetch(dictionaryUrl);
+    const res = await fetch(DICTIONARY_URL);
     if (!res.body) throw new Error("Failed to fetch dictionary: No response body");
 
     const contentLength = res.headers.get("content-length");
@@ -40,8 +45,6 @@ export async function updateDictionary() {
     });
 
     await finished(readableStream.pipe(fileStream));
-    await extractDictionary(toast);
-    await LocalStorage.setItem("isDictionaryReady", true);
   } catch (error) {
     console.error("Error downloading dictionary:", error);
     toast.style = Toast.Style.Failure;
