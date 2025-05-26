@@ -1,5 +1,5 @@
 import { List } from "@raycast/api";
-import { DB_PATH } from "./lib";
+import { DB_PATH } from "./constants";
 import { useState } from "react";
 import { useSQL } from "@raycast/utils";
 import { HTMLElement, Node, NodeType, parse } from "node-html-parser";
