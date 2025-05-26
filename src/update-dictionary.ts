@@ -7,7 +7,8 @@ import yauzl from "yauzl";
 import { DICTIONARY_PATH, DICTIONARY_URL, DOWNLOAD_PATH } from "./lib";
 
 export default async function Command() {
-  await updateDictionary();
+  throw new Error("This command is a WIP. It is not ready for use yet.");
+  // await updateDictionary();
 }
 
 async function updateDictionary() {
