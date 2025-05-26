@@ -24,7 +24,6 @@
     "@raycast/api": "^1.99.2",
     "@raycast/utils": "^1.17.0",
     "node-html-parser": "^7.0.1",
-    "turndown": "^7.2.0",
     "yauzl": "^3.2.0"
   },
   "devDependencies": {

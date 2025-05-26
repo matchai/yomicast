@@ -2,10 +2,7 @@ import { List } from "@raycast/api";
 import { DB_PATH } from "./lib";
 import { useState } from "react";
 import { useSQL } from "@raycast/utils";
-// import Turndown from "turndown";
 import { HTMLElement, Node, NodeType, parse } from "node-html-parser";
-
-// const turndownService = new Turndown();
 
 type KanjiItem = {
   id: string;
