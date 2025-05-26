@@ -14,7 +14,7 @@ type KanjiItem = {
 };
 
 export default function Command() {
-  const [searchText, setSearchText] = useState<string>("うち");
+  const [searchText, setSearchText] = useState<string>("発条");
   const { isLoading, data } = useSQL<KanjiItem>(DB_PATH, getKanjiQuery(searchText));
 
   const formattedData = data?.map(formatKanjiItem) || [];
@@ -33,35 +33,7 @@ export default function Command() {
           key={item.id}
           title={item.kanji || item.kana}
           subtitle={item.kanji ? item.kana : undefined}
-          detail={
-            <List.Item.Detail
-              metadata={
-                <List.Item.Detail.Metadata>
-                  <List.Item.Detail.Metadata.Label title="Kanji" text={item.kanji} />
-                  <List.Item.Detail.Metadata.Label title="Kana" text={item.kana} />
-                  <List.Item.Detail.Metadata.Separator />
-                  <List.Item.Detail.Metadata.Label
-                    title="Definitions"
-                    text={
-                      item.definitions?.map((definition) => definition.trim()).join(" | ") || "No definitions found"
-                    }
-                  />
-                  {/* {item.definitions?.map((definition, index) => (
-                    <List.Item.Detail.Metadata.Label key={index} title={`${index + 1}.`} text={definition} />
-                  ))} */}
-                  {item.footnoteLinks.length > 0 && <List.Item.Detail.Metadata.Separator />}
-                  {item.footnoteLinks.map((link) => (
-                    <List.Item.Detail.Metadata.Link
-                      key={link.title}
-                      title={link.title}
-                      text={link.text}
-                      target={link.url}
-                    />
-                  ))}
-                </List.Item.Detail.Metadata>
-              }
-            />
-          }
+          detail={<List.Item.Detail markdown={KanjiItemToMarkdown(item)} />}
         />
       ))}
     </List>
@@ -70,22 +42,26 @@ export default function Command() {
 
 function formatKanjiItem(item: KanjiItem) {
   const html = parse(item.paraphrase);
+  const headword = html.querySelector(".headword")!;
 
-  // Extract kana from ruby elements (furigana)
-  const kana =
-    html
-      .querySelectorAll(".headword rt")
-      ?.map((part) => part.text)
-      .join("") || item.entry;
+  const kana = extractKana(headword) ?? item.entry;
+  const kanji = extractKanji(headword);
 
-  // Extract kanji by filtering furigana
-  const kanji = html
-    .querySelectorAll(".headword ruby")
-    .flatMap((char) => char.childNodes.filter((node) => node.nodeType === NodeType.TEXT_NODE))
-    .map((node: Node) => node.text)
-    .join("");
+  console.log({ kana, kanji });
 
-  const definitions = html.querySelector(".glossary")?.childNodes.map((node) => node.text);
+  const definitionGroups = html.querySelectorAll(".sense-group");
+
+  const definitions = definitionGroups.map((group) => {
+    const groupTitle = group.querySelector(".part-of-speech-info")?.text;
+    const groupDefinitions = group.querySelectorAll(".gloss").map((def) => {
+      return def.text;
+    });
+
+    return {
+      title: groupTitle,
+      definitions: groupDefinitions,
+    };
+  });
 
   const footnoteLinks = html
     .querySelectorAll(".entry-footnotes a")
@@ -111,6 +87,33 @@ function isValidLink(link: HTMLElement) {
   const validSites = ["edrdg.org"];
   const href = link.getAttribute("href")!;
   return validSites.some((site) => href.includes(site));
+}
+
+function KanjiItemToMarkdown(item: ReturnType<typeof formatKanjiItem>) {
+  return `
+  ## ${item.kanji ? `${item.kanji} ⋅ ${item.kana}` : item.kana}
+
+  ${item.definitions?.map((def) => `### ${def.title || "Definition"}\n${def.definitions.map((def) => `1. ${def}`).join("\n")}`).join("\n")}`;
+}
+
+/** Extract kana from provided html's furigana */
+function extractKana(html: HTMLElement) {
+  const hasRuby = html.querySelector("ruby");
+  if (!hasRuby) return html.text;
+
+  return html
+    .querySelectorAll("rt")
+    ?.map((part) => part.text)
+    .join("");
+}
+
+/** Extract kanji by removing provided html's furigana */
+function extractKanji(html: HTMLElement) {
+  return html
+    .querySelectorAll("ruby")
+    .flatMap((char) => char.childNodes.filter((node) => node.nodeType === NodeType.TEXT_NODE))
+    .map((node: Node) => node.text)
+    .join("");
 }
 
 function getKanjiQuery(query: string) {
