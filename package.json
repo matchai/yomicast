@@ -8,12 +8,6 @@
   "license": "MIT",
   "commands": [
     {
-      "name": "translate",
-      "title": "Translate Japanese",
-      "description": "",
-      "mode": "view"
-    },
-    {
       "name": "update-dictionary",
       "title": "Update Dictionary",
       "description": "",
@@ -23,8 +17,7 @@
   "dependencies": {
     "@raycast/api": "^1.99.2",
     "@raycast/utils": "^1.17.0",
-    "@scriptin/jmdict-simplified-loader": "^3.6.1",
-    "node-html-parser": "^7.0.1"
+    "@scriptin/jmdict-simplified-loader": "^3.6.1"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",

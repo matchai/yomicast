@@ -10,8 +10,8 @@ export async function extractDictionary(filePath: string, toast: Toast) {
   toast.title = "Extracting dictionary...";
   toast.message = "";
 
-  const parsedGz = path.parse(filePath);
-  const extractedPath = path.join(environment.supportPath, parsedGz.name);
+  const parsedZip = path.parse(filePath);
+  const extractedPath = path.join(environment.supportPath, parsedZip.name).replace(/\+\w+/g, "");
   if (fsSync.existsSync(extractedPath)) {
     await fs.rm(extractedPath, { recursive: true });
   }
@@ -19,17 +19,13 @@ export async function extractDictionary(filePath: string, toast: Toast) {
   try {
     // Unzip the file
     await new Promise((resolve) => {
-      exec(`gunzip --stdout "${filePath}" > "${extractedPath}"`, (err) => {
+      exec(`unzip "${filePath}" -d "${environment.supportPath}"`, (err) => {
         if (err) console.error(err);
       }).on("exit", async () => {
         resolve(true);
       });
     });
     console.log("Dictionary extracted to", extractedPath);
-
-    toast.style = Toast.Style.Success;
-    toast.title = "Dictionary updated successfully";
-    toast.message = "";
     return extractedPath;
   } catch (error) {
     console.error("Error extracting dictionary:", error);

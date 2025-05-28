@@ -1,8 +1,10 @@
-import { environment, showToast, Toast } from "@raycast/api";
+import { showToast, Toast } from "@raycast/api";
 import { downloadFile, extractDictionary } from "./dictionary/download";
 import { loadDictionary } from "@scriptin/jmdict-simplified-loader";
 import { TEMP_DIR } from "./constants";
-import path from "node:path";
+
+const downloadUrl =
+  "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-eng-3.6.1+20250526122839.json.zip";
 
 export default async function Command() {
   const toast = await showToast({
@@ -11,7 +13,7 @@ export default async function Command() {
     message: `Progress: 0%`,
   });
 
-  const gzPath = await downloadFile("http://ftp.edrdg.org/pub/Nihongo/JMdict_e.gz", TEMP_DIR, toast);
+  const gzPath = await downloadFile(downloadUrl, TEMP_DIR, toast);
   if (!gzPath) {
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to download dictionary";
@@ -27,16 +29,22 @@ export default async function Command() {
     return;
   }
 
-  // const dictPath = path.join("~/Download", "jmdict-eng-3.6.1.json");
-  console.log("Loading dictionary from", dictPath);
-  const loader = loadDictionary("jmdict", dictPath).onEntry((entry) => {
-    console.log(entry.id, entry.kanji[0], entry.kana[0], entry.sense);
-  });
-  console.log(loader);
-  loader.onMetadata((metadata) => {
-    console.log("Metadata:", metadata);
-  });
-  loader.parser.on("error", (error: unknown) => {
-    console.error(error);
+  await new Promise((resolve, reject) => {
+    const loader = loadDictionary("jmdict", dictPath)
+      .onMetadata((metadata) => console.log("Metadata:", JSON.stringify(metadata, null, 2)))
+      .onEntry((entry, metadata) => {})
+      .onEnd(() => {
+        toast.style = Toast.Style.Success;
+        toast.title = "Dictionary updated successfully";
+        toast.message = "You can now use the latest dictionary.";
+        resolve(null);
+      });
+
+    loader.parser.on("error", (error: unknown) => {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Error loading dictionary";
+      console.log("Failed to parse dictionary:", error);
+      reject(error);
+    });
   });
 }
