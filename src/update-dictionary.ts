@@ -1,6 +1,6 @@
-import { showToast, Toast } from "@raycast/api";
 import { downloadFile, extractDictionary } from "./dictionary/download";
 import { loadDictionary } from "@scriptin/jmdict-simplified-loader";
+import { showToast, Toast } from "@raycast/api";
 import { TEMP_DIR } from "./constants";
 
 const downloadUrl =
@@ -13,15 +13,15 @@ export default async function Command() {
     message: `Progress: 0%`,
   });
 
-  const gzPath = await downloadFile(downloadUrl, TEMP_DIR, toast);
-  if (!gzPath) {
+  const archivePath = await downloadFile(downloadUrl, TEMP_DIR, toast);
+  if (!archivePath) {
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to download dictionary";
     toast.message = "Please try again later.";
     return;
   }
 
-  const dictPath = await extractDictionary(gzPath, toast);
+  const dictPath = await extractDictionary(archivePath, toast);
   if (!dictPath) {
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to extract dictionary";
@@ -32,7 +32,9 @@ export default async function Command() {
   await new Promise((resolve, reject) => {
     const loader = loadDictionary("jmdict", dictPath)
       .onMetadata((metadata) => console.log("Metadata:", JSON.stringify(metadata, null, 2)))
-      .onEntry((entry, metadata) => {})
+      .onEntry((entry) => {
+        console.log("Entry:", entry);
+      })
       .onEnd(() => {
         toast.style = Toast.Style.Success;
         toast.title = "Dictionary updated successfully";
