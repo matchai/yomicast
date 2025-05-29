@@ -19,7 +19,8 @@
     "@raycast/utils": "^1.17.0",
     "@scriptin/jmdict-simplified-loader": "^3.6.1",
     "adm-zip": "^0.5.16",
-    "sql.js": "1.7.0"
+    "sql.js": "1.7.0",
+    "wanakana": "^5.3.1"
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",

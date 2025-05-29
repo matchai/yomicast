@@ -5,6 +5,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { sql } from "./utils";
 import initSqlJs, { Database } from "sql.js";
+import wanakana from "wanakana";
 
 const DOWNLOAD_PATH = path.join(environment.supportPath, "jmdict.json.zip");
 const EXTRACT_PATH = path.join(environment.supportPath, "jmdict.json");
@@ -77,9 +78,21 @@ export default async function Command() {
       );
     });
     loader.onEntry((entry) => {
+      // Insert full entry data
       db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data) VALUES (:entry_id, :data);`, {
         ":entry_id": entry.id,
         ":data": JSON.stringify(entry),
+      });
+
+      // Insert normalized kana
+      entry.kana.forEach((kana) => {
+        db.run(
+          sql`INSERT OR REPLACE INTO kana_index (normalized_kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
+          {
+            ":kana_text": wanakana.toHiragana(kana.text),
+            ":entry_id": entry.id,
+          },
+        );
       });
 
       count += 1;
