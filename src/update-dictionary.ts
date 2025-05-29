@@ -64,21 +64,35 @@ export default async function Command() {
 
   console.log("Loading dictionary...");
   await new Promise<void>((resolve, reject) => {
+    let count = 0;
+    const total = 212062; // TODO: Get the total number from somewhere more reliable
     const loader = loadDictionary("jmdict", EXTRACT_PATH).onMetadata((metadata) => {
-      const metadataPairs = [
-        { key: "version", value: metadata.version },
-        { key: "date", value: metadata.dictDate },
-        { key: "tags", value: JSON.stringify(metadata.tags) },
-      ];
-
-      for (const { key, value } of metadataPairs) {
-        db.run(sql`INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?);`, [key, value]);
-      }
+      db.run(
+        sql`INSERT OR REPLACE INTO metadata (key, value) VALUES ('version', :version), ('date', :date), ('tags', :tags);`,
+        {
+          ":version": metadata.version,
+          ":date": metadata.dictDate,
+          ":tags": JSON.stringify(metadata.tags),
+        },
+      );
     });
     loader.onEntry((entry) => {
-      
+      db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data) VALUES (:entry_id, :data);`, {
+        ":entry_id": entry.id,
+        ":data": JSON.stringify(entry),
+      });
+
+      count += 1;
+      if (count % 1000 === 0) {
+        updateToast({
+          title: "Indexing database...",
+          message: `Progress: ${Math.round((count / total) * 100)}%`,
+          style: Toast.Style.Animated,
+        });
+      }
     });
     loader.onEnd(() => {
+      console.log(`Indexed ${count} entries.`);
       console.log("Dictionary loaded successfully.");
       resolve();
     });
@@ -133,56 +147,3 @@ function createTables(db: Database) {
     );
   `);
 }
-
-//  async function Command() {
-//   const toast = await showToast({
-//     style: Toast.Style.Animated,
-//     title: "Downloading latest dictionary...",
-//     message: `Progress: 0%`,
-//   });
-
-//   if (!fs.existsSync(downloadPath)) {
-//     const archivePath = await downloadFile(downloadUrl, downloadPath, toast);
-//     if (!archivePath) {
-//       toast.style = Toast.Style.Failure;
-//       toast.title = "Failed to download dictionary";
-//       toast.message = "Please try again later.";
-//       return;
-//     }
-//   }
-
-//   const dictPath = await extractDictionary(downloadPath, toast);
-//   if (!dictPath) {
-//     toast.style = Toast.Style.Failure;
-//     toast.title = "Failed to extract dictionary";
-//     toast.message = "Please try again later.";
-//     return;
-//   }
-
-//   // Create a new database file if it doesn't exist
-//   const db = new Database(dbPath, { verbose: console.log });
-//   db.close();
-
-//   await executeSQL(sql`CREATE TABLE IF NOT EXISTS word_senses (id INTEGER PRIMARY KEY, sense TEXT);`);
-
-//   await new Promise((resolve, reject) => {
-//     const loader = loadDictionary("jmdict", dictPath)
-//       .onMetadata((metadata) => console.log("Metadata:", JSON.stringify(metadata, null, 2)))
-//       .onEntry((entry) => {
-//         executeSQL(sql`INSERT OR REPLACE INTO word_senses ("id", "sense") VALUES ("${entry.id}", "${entry.sense}");`);
-//       })
-//       .onEnd(() => {
-//         toast.style = Toast.Style.Success;
-//         toast.title = "Dictionary updated successfully";
-//         toast.message = "You can now use the latest dictionary.";
-//         resolve(null);
-//       });
-
-//     loader.parser.on("error", (error: unknown) => {
-//       toast.style = Toast.Style.Failure;
-//       toast.title = "Error loading dictionary";
-//       console.log("Failed to parse dictionary:", error);
-//       reject(error);
-//     });
-//   });
-// }
