@@ -3,7 +3,7 @@ import { DOWNLOAD_PATH, DB_PATH, EXTRACT_PATH, SQLITE_WASM_PATH } from "./consta
 import { loadDictionary } from "@scriptin/jmdict-simplified-loader";
 import { showToast, Toast } from "@raycast/api";
 import fs from "node:fs";
-import { sql } from "./utils";
+import { normalizeKana, sql } from "./utils";
 import initSqlJs, { Database } from "sql.js";
 import wanakana from "wanakana";
 
@@ -94,11 +94,7 @@ export default async function Command() {
         db.run(
           sql`INSERT OR REPLACE INTO kana_index (normalized_kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
           {
-            ":kana_text": wanakana.toHiragana(kana.text, {
-              // Don't convert long vowel marks to hiragana
-              // (e.g. ケーキ -> けえき. Instead, it should be けーき)
-              convertLongVowelMark: false,
-            }),
+            ":kana_text": normalizeKana(kana.text),
             ":entry_id": entry.id,
           },
         );

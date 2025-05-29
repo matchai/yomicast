@@ -3,7 +3,7 @@ import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
 import { List } from "@raycast/api";
-import { sql } from "./utils";
+import { normalizeKana, sql } from "./utils";
 import fs from "node:fs";
 
 type KanjiItem = {
@@ -30,7 +30,7 @@ function search(db: Database, query: string) {
       SELECT * FROM entries WHERE entry_id IN (
         SELECT entry_id FROM kana_index WHERE normalized_kana_text LIKE :query LIMIT 50
       )`,
-    { ":query": `${query.trim()}%` },
+    { ":query": `${query}%` },
   );
 
   const results: KanjiItem[] = [];
@@ -64,6 +64,10 @@ export default function Command() {
   const [db, setDb] = useState<Database>();
   const [query, setQuery] = useState<string>("りんご");
 
+  const onSearchTextChange = (text: string) => {
+    setQuery(normalizeKana(text));
+  };
+
   useEffect(() => {
     openDb().then((db) => setDb(db));
     return () => db?.close();
@@ -81,7 +85,7 @@ export default function Command() {
       navigationTitle="Translate Japanese"
       searchBarPlaceholder="Search Yomicast..."
       searchText={query}
-      onSearchTextChange={setQuery}
+      onSearchTextChange={onSearchTextChange}
       isShowingDetail
     >
       {formattedData.map((item) => (
