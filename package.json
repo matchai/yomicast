@@ -12,6 +12,12 @@
       "title": "Update Dictionary",
       "description": "",
       "mode": "no-view"
+    },
+    {
+      "name": "translate",
+      "title": "Translate Japanese/English",
+      "description": "",
+      "mode": "view"
     }
   ],
   "dependencies": {
@@ -24,6 +30,7 @@
   },
   "devDependencies": {
     "@raycast/eslint-config": "^2.0.4",
+    "@scriptin/jmdict-simplified-types": "^3.6.1",
     "@types/adm-zip": "^0.5.7",
     "@types/node": "22.13.10",
     "@types/react": "19.0.10",

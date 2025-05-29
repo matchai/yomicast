@@ -1,15 +1,11 @@
 import { downloadFile, extractDictionary, getLatestDictionaryUrl } from "./dictionary/download";
+import { DOWNLOAD_PATH, DB_PATH, EXTRACT_PATH, SQLITE_WASM_PATH } from "./constants";
 import { loadDictionary } from "@scriptin/jmdict-simplified-loader";
-import { environment, showToast, Toast } from "@raycast/api";
-import path from "node:path";
+import { showToast, Toast } from "@raycast/api";
 import fs from "node:fs";
 import { sql } from "./utils";
 import initSqlJs, { Database } from "sql.js";
 import wanakana from "wanakana";
-
-const DOWNLOAD_PATH = path.join(environment.supportPath, "jmdict.json.zip");
-const EXTRACT_PATH = path.join(environment.supportPath, "jmdict.json");
-const DB_PATH = path.join(environment.supportPath, "jmdict.db");
 
 let toast: Toast | null = null;
 async function updateToast(options: Toast.Options) {
@@ -56,7 +52,7 @@ export default async function Command() {
     message: "",
   });
 
-  const wasmBinary = fs.readFileSync(path.join(environment.assetsPath, "sql-wasm-fts5.wasm"));
+  const wasmBinary = fs.readFileSync(SQLITE_WASM_PATH);
   const SQL = await initSqlJs({ wasmBinary });
   const db = new SQL.Database();
 
@@ -78,10 +74,19 @@ export default async function Command() {
       );
     });
     loader.onEntry((entry) => {
+      db.run("BEGIN TRANSACTION;");
       // Insert full entry data
       db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data) VALUES (:entry_id, :data);`, {
         ":entry_id": entry.id,
         ":data": JSON.stringify(entry),
+      });
+
+      // Insert kanji
+      entry.kanji.forEach((kanji) => {
+        db.run(sql`INSERT OR REPLACE INTO kanji_index (kanji_text, entry_id) VALUES (:kanji_text, :entry_id);`, {
+          ":kanji_text": kanji.text,
+          ":entry_id": entry.id,
+        });
       });
 
       // Insert normalized kana
@@ -94,6 +99,7 @@ export default async function Command() {
           },
         );
       });
+      db.run("COMMIT;");
 
       count += 1;
       if (count % 1000 === 0) {
