@@ -8,16 +8,16 @@
   "license": "MIT",
   "commands": [
     {
+      "name": "translate",
+      "title": "Translate Japanese",
+      "description": "",
+      "mode": "view"
+    },
+    {
       "name": "update-dictionary",
       "title": "Update Dictionary",
       "description": "",
       "mode": "no-view"
-    },
-    {
-      "name": "translate",
-      "title": "Translate Japanese/English",
-      "description": "",
-      "mode": "view"
     }
   ],
   "dependencies": {

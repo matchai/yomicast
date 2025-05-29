@@ -2,7 +2,7 @@ import { JMdictWord } from "@scriptin/jmdict-simplified-types";
 import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
-import { List } from "@raycast/api";
+import { Action, ActionPanel, List } from "@raycast/api";
 import { normalizeKana, sql } from "./utils";
 import fs from "node:fs";
 
@@ -13,8 +13,9 @@ type KanjiItem = {
 
 type FormattedKanjiItem = {
   id: number;
-  kanji?: string;
   kana: string;
+  kanji?: string;
+  definition?: string;
   detail: string;
 };
 
@@ -48,6 +49,7 @@ function search(db: Database, query: string) {
 function formatKanjiItem({ entry_id: id, data: item }: KanjiItem): FormattedKanjiItem {
   const kanji = item.kanji.at(0)?.text;
   const kana = item.kana.at(0)?.text || "No kana";
+  const definition = item.sense.at(0)?.gloss.at(0)?.text;
   const detail = `## ${kanji || kana}
 
   ${item.sense.flatMap((sense) => sense.gloss.map((gloss) => `- ${gloss.text}`)).join("\n\n")}`;
@@ -56,13 +58,15 @@ function formatKanjiItem({ entry_id: id, data: item }: KanjiItem): FormattedKanj
     id,
     kanji,
     kana,
+    definition,
     detail,
   };
 }
 
 export default function Command() {
   const [db, setDb] = useState<Database>();
-  const [query, setQuery] = useState<string>("りんご");
+  const [query, setQuery] = useState("りんご");
+  const [showingDetail, setShowingDetail] = useState(false);
 
   useEffect(() => {
     openDb().then((db) => setDb(db));
@@ -82,14 +86,20 @@ export default function Command() {
       searchBarPlaceholder="Search Yomicast..."
       searchText={query}
       onSearchTextChange={setQuery}
-      isShowingDetail
+      isShowingDetail={showingDetail}
     >
       {formattedData.map((item) => (
         <List.Item
           key={item.id}
           title={item.kanji ?? item.kana}
-          subtitle={item.kanji ? item.kana : undefined}
+          subtitle={item.kanji && !showingDetail ? item.kana : undefined}
+          accessories={[{ text: item.definition }]}
           detail={<List.Item.Detail markdown={item.detail} />}
+          actions={
+            <ActionPanel>
+              <Action title="Toggle Detail" onAction={() => setShowingDetail(!showingDetail)} />
+            </ActionPanel>
+          }
         />
       ))}
     </List>
