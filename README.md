@@ -16,3 +16,7 @@ Since Yomicast is still very much a work-in-progress, I don't have dictionary im
    ```
 
 3. Drop the generated `jitendex.db` file into your plugin's environment support path: `~/Library/Application Support/com.raycast.macos/extensions/yomicast`
+
+
+### Inspired By
+- ensk-is extension

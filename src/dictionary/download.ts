@@ -1,39 +1,13 @@
-import fs from "node:fs/promises";
-import fsSync from "node:fs";
+import fs from "node:fs";
 import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
 import { environment, Toast } from "@raycast/api";
-import path from "node:path";
-import { exec } from "node:child_process";
+import { basename } from "node:path";
+import AdmZip from 'adm-zip'
 
-export async function extractDictionary(filePath: string, toast: Toast) {
-  toast.title = "Extracting dictionary...";
-  toast.message = "";
-
-  const parsedZip = path.parse(filePath);
-  const extractedPath = path.join(environment.supportPath, parsedZip.name).replace(/\+\w+/g, "");
-  if (fsSync.existsSync(extractedPath)) {
-    await fs.rm(extractedPath, { recursive: true });
-  }
-
-  try {
-    // Unzip the file
-    await new Promise((resolve) => {
-      exec(`unzip "${filePath}" -d "${environment.supportPath}"`, (err) => {
-        if (err) console.error(err);
-      }).on("exit", async () => {
-        resolve(true);
-      });
-    });
-    console.log("Dictionary extracted to", extractedPath);
-    return extractedPath;
-  } catch (error) {
-    console.error("Error extracting dictionary:", error);
-    toast.style = Toast.Style.Failure;
-    toast.title = "Failed to extract dictionary";
-    toast.message = "Please try again later.";
-    return null;
-  }
+export function getLatestDictionaryUrl() {
+  // TODO: Get the latest dictionary URL
+  return "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-eng-3.6.1+20250526122839.json.zip";
 }
 
 export async function downloadFile(url: string, destination: string, toast: Toast) {
@@ -45,10 +19,8 @@ export async function downloadFile(url: string, destination: string, toast: Toas
     const totalBytes = contentLength ? parseInt(contentLength, 10) : 0;
 
     let downloadedBytes = 0;
-    const filename = path.basename(url);
-    const destinationPath = path.join(destination, filename);
-    console.log("Downloading to", destinationPath);
-    const fileStream = fsSync.createWriteStream(destinationPath, { flags: "w" });
+    console.log("Downloading to", destination);
+    const fileStream = fs.createWriteStream(destination, { flags: "w" });
     const readableStream = Readable.fromWeb(res.body);
 
     // Log the download progress
@@ -60,11 +32,38 @@ export async function downloadFile(url: string, destination: string, toast: Toas
     });
 
     await finished(readableStream.pipe(fileStream));
-    return destinationPath;
+    return destination;
   } catch (error) {
     console.error("Error downloading dictionary:", error);
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to download dictionary";
     toast.message = "Please try again later.";
+  }
+}
+
+export async function extractDictionary(zipPath: string, outputPath: string, toast: Toast) {
+  toast.title = "Extracting dictionary...";
+  toast.message = "";
+  console.log("Extracting to", outputPath);
+
+  // Extract the zip file in the archive
+  try {
+    const zip = new AdmZip(zipPath);
+    for (const entry of zip.getEntries()) {
+      if (!entry.name.endsWith(".json")) continue;
+      zip.extractEntryTo(entry.entryName, environment.supportPath, false, true, false, basename(outputPath));
+
+      toast.style = Toast.Style.Success;
+      toast.title = "Dictionary updated successfully";
+      toast.message = "";
+      break;
+    }
+  } catch (error) {
+    console.log(error)
+
+    toast.style = Toast.Style.Failure;
+    toast.title = "Failed to extract dictionary";
+    toast.message = "Please try again later.";
+    console.error("Error extracting dictionary:", error);
   }
 }
