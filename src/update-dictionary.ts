@@ -4,7 +4,7 @@ import { environment, showToast, Toast } from "@raycast/api";
 import path from "node:path";
 import fs from "node:fs";
 import { sql } from "./utils";
-import initSqlJs from "sql.js";
+import initSqlJs, { Database } from "sql.js";
 
 const DOWNLOAD_PATH = path.join(environment.supportPath, "jmdict.json.zip");
 const EXTRACT_PATH = path.join(environment.supportPath, "jmdict.json");
@@ -55,17 +55,55 @@ export default async function Command() {
     message: "",
   });
 
-  const wasmBinary = fs.readFileSync(path.join(environment.assetsPath, "sql-wasm.wasm"));
+  const wasmBinary = fs.readFileSync(path.join(environment.assetsPath, "sql-wasm-fts5.wasm"));
   const SQL = await initSqlJs({ wasmBinary });
   const db = new SQL.Database();
 
-  console.log("Creating schema...");
+  console.log("Creating tables...");
+  createTables(db);
 
-  db.run(sql`
+  console.log("Loading dictionary...");
+  await new Promise<void>((resolve, reject) => {
+    const loader = loadDictionary("jmdict", EXTRACT_PATH).onMetadata((metadata) => {
+      const metadataPairs = [
+        { key: "version", value: metadata.version },
+        { key: "date", value: metadata.dictDate },
+        { key: "tags", value: JSON.stringify(metadata.tags) },
+      ];
+
+      for (const { key, value } of metadataPairs) {
+        db.run(sql`INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?);`, [key, value]);
+      }
+    });
+    loader.onEntry((entry) => {
+      
+    });
+    loader.onEnd(() => {
+      console.log("Dictionary loaded successfully.");
+      resolve();
+    });
+    loader.parser.on("error", (error: unknown) => {
+      console.error("Failed to parse dictionary:", error);
+      reject(error);
+    });
+  });
+
+  await fs.promises.writeFile(DB_PATH, db.export());
+  db.close();
+}
+
+function createTables(db: Database) {
+  return db.run(sql`
+    DROP TABLE IF EXISTS metadata;
     DROP TABLE IF EXISTS entries;
     DROP TABLE IF EXISTS kanji_index;
     DROP TABLE IF EXISTS kana_index;
-    -- DROP TABLE IF EXISTS gloss_fts_index;
+    DROP TABLE IF EXISTS gloss_fts_index;
+
+    CREATE TABLE metadata (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
 
     CREATE TABLE entries (
       entry_id INTEGER PRIMARY KEY,
@@ -88,15 +126,12 @@ export default async function Command() {
     );
     CREATE INDEX idx_kana_text_prefix ON kana_index(normalized_kana_text);
 
-    -- CREATE VIRTUAL TABLE gloss_fts_index USING fts5(
-    --   entry_id UNINDEXED,
-    --   gloss_content,
-    --   tokenize = 'unicode61'
-    -- );
+    CREATE VIRTUAL TABLE gloss_fts_index USING fts5(
+      entry_id UNINDEXED,
+      gloss_content,
+      tokenize = 'unicode61'
+    );
   `);
-
-  await fs.promises.writeFile(DB_PATH, db.export());
-  db.close();
 }
 
 //  async function Command() {
