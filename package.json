@@ -10,13 +10,13 @@
     {
       "name": "translate",
       "title": "Translate Japanese",
-      "description": "",
+      "description": "Search for English/Japanese translations.",
       "mode": "view"
     },
     {
       "name": "update-dictionary",
       "title": "Update Dictionary",
-      "description": "",
+      "description": "Update the dictionary with the latest JMDict definitions.",
       "mode": "no-view"
     }
   ],
