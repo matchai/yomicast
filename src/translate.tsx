@@ -25,12 +25,13 @@ async function openDb() {
 }
 
 function search(db: Database, query: string) {
+  const normalizedQuery = normalizeKana(query.trim().toLowerCase());
   const stmt = db.prepare(
     sql`
       SELECT * FROM entries WHERE entry_id IN (
         SELECT entry_id FROM kana_index WHERE normalized_kana_text LIKE :query LIMIT 50
       )`,
-    { ":query": `${query}%` },
+    { ":query": `${normalizedQuery}%` },
   );
 
   const results: KanjiItem[] = [];
@@ -47,10 +48,9 @@ function search(db: Database, query: string) {
 function formatKanjiItem({ entry_id: id, data: item }: KanjiItem): FormattedKanjiItem {
   const kanji = item.kanji.at(0)?.text;
   const kana = item.kana.at(0)?.text || "No kana";
-  const detail = `## ${kanji || kana} 
+  const detail = `## ${kanji || kana}
 
-  ${item.sense.flatMap((sense) => sense.gloss.map((gloss) => `- ${gloss.text}`)).join("\n\n")}
-  `;
+  ${item.sense.flatMap((sense) => sense.gloss.map((gloss) => `- ${gloss.text}`)).join("\n\n")}`;
 
   return {
     id,
@@ -63,10 +63,6 @@ function formatKanjiItem({ entry_id: id, data: item }: KanjiItem): FormattedKanj
 export default function Command() {
   const [db, setDb] = useState<Database>();
   const [query, setQuery] = useState<string>("りんご");
-
-  const onSearchTextChange = (text: string) => {
-    setQuery(normalizeKana(text));
-  };
 
   useEffect(() => {
     openDb().then((db) => setDb(db));
@@ -85,7 +81,7 @@ export default function Command() {
       navigationTitle="Translate Japanese"
       searchBarPlaceholder="Search Yomicast..."
       searchText={query}
-      onSearchTextChange={onSearchTextChange}
+      onSearchTextChange={setQuery}
       isShowingDetail
     >
       {formattedData.map((item) => (
