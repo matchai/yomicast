@@ -94,7 +94,11 @@ export default async function Command() {
         db.run(
           sql`INSERT OR REPLACE INTO kana_index (normalized_kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
           {
-            ":kana_text": wanakana.toHiragana(kana.text),
+            ":kana_text": wanakana.toHiragana(kana.text, {
+              // Don't convert long vowel marks to hiragana
+              // (e.g. ケーキ -> けえき. Instead, it should be けーき)
+              convertLongVowelMark: false,
+            }),
             ":entry_id": entry.id,
           },
         );

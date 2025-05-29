@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { List } from "@raycast/api";
-import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
-import fs from "node:fs";
-import initSqlJs, { Database } from "sql.js";
-import { sql } from "./utils";
 import { JMdictWord } from "@scriptin/jmdict-simplified-types";
+import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
+import { useEffect, useMemo, useState } from "react";
+import initSqlJs, { Database } from "sql.js";
+import { List } from "@raycast/api";
+import { sql } from "./utils";
+import fs from "node:fs";
 
 type KanjiItem = {
   entry_id: number;
@@ -28,7 +28,7 @@ function search(db: Database, query: string) {
   const stmt = db.prepare(
     sql`
       SELECT * FROM entries WHERE entry_id IN (
-        SELECT entry_id FROM kana_index WHERE normalized_kana_text LIKE :query
+        SELECT entry_id FROM kana_index WHERE normalized_kana_text LIKE :query LIMIT 50
       )`,
     { ":query": `${query.trim()}%` },
   );
