@@ -1,18 +1,15 @@
-import { JMdictWord } from "@scriptin/jmdict-simplified-types";
 import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
 import { Action, ActionPanel, List } from "@raycast/api";
-import { normalizeKana, sql } from "./utils";
+import { normalizeKana, partOfSpeechToString } from "./utils";
 import fs from "node:fs";
-
-type KanjiItem = {
-  entry_id: number;
-  data: JMdictWord;
-};
+import { isJapanese, isKana } from "wanakana";
+import { searchKana, searchKanji } from "./dictionary/search";
+import { JMdictWord } from "@scriptin/jmdict-simplified-types";
 
 type FormattedKanjiItem = {
-  id: number;
+  id: string;
   kana: string;
   kanji?: string;
   definition?: string;
@@ -26,36 +23,35 @@ async function openDb() {
 }
 
 function search(db: Database, query: string) {
-  const normalizedQuery = normalizeKana(query.trim().toLowerCase());
-  const stmt = db.prepare(
-    sql`
-      SELECT * FROM entries WHERE entry_id IN (
-        SELECT entry_id FROM kana_index WHERE normalized_kana_text LIKE :query LIMIT 50
-      )`,
-    { ":query": `${normalizedQuery}%` },
-  );
-
-  const results: KanjiItem[] = [];
-  while (stmt.step()) {
-    const result = stmt.getAsObject();
-    result.data = JSON.parse(result.data as string);
-    results.push(result as unknown as KanjiItem);
+  const japaneseQuery = normalizeKana(query);
+  if (!isJapanese(japaneseQuery)) {
+    // return searchEnglish(db, japaneseQuery);
   }
-  stmt.free();
 
-  return results;
+  // TODO: Mixed kanji-kana searches as kanji FTS
+  console.log({ isKana: isKana(japaneseQuery), isJapanese: isJapanese(japaneseQuery) });
+
+  if (isKana(japaneseQuery)) {
+    return searchKana(db, japaneseQuery);
+  }
+
+  return searchKanji(db, japaneseQuery);
 }
 
-function formatKanjiItem({ entry_id: id, data: item }: KanjiItem): FormattedKanjiItem {
+function formatKanjiItem(item: JMdictWord): FormattedKanjiItem {
   const kanji = item.kanji.at(0)?.text;
   const kana = item.kana.at(0)?.text || "No kana";
   const definition = item.sense.at(0)?.gloss.at(0)?.text;
   const detail = `## ${kanji || kana}
-
-  ${item.sense.flatMap((sense) => sense.gloss.map((gloss) => `- ${gloss.text}`)).join("\n\n")}`;
+  ${item.sense
+    .map((sense) => {
+      return `### ${sense.partOfSpeech.map(partOfSpeechToString).join(", ")}
+${sense.gloss.map((gloss) => `1. ${gloss.text}`).join("\n")}`;
+    })
+    .join("\n\n")}`;
 
   return {
-    id,
+    id: item.id,
     kanji,
     kana,
     definition,
@@ -75,7 +71,9 @@ export default function Command() {
 
   const results = useMemo(() => {
     if (!db || query.trim() === "") return [];
-    return search(db, query);
+    const res = search(db, query);
+    console.log(res);
+    return res
   }, [db, query]);
 
   const formattedData = results.map(formatKanjiItem) || [];

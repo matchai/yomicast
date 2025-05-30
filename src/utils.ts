@@ -10,9 +10,25 @@ export function sql(strings: TemplateStringsArray, ...expr: unknown[]) {
 
 /** Normalizes a romaji or katakana string to hiragana for searching and indexing. */
 export function normalizeKana(text: string) {
-  return wanakana.toHiragana(text, {
+  const trimmedText = text.trim().toLowerCase();
+  return wanakana.toHiragana(trimmedText, {
     // Don't convert long vowel marks to hiragana
     // (e.g. ケーキ -> けえき. Instead, it should be けーき)
     convertLongVowelMark: false,
   });
+}
+
+export function partOfSpeechToString(pos: string) {
+  switch (pos) {
+    case "n":
+      return "Noun";
+    case "exp":
+      return "Expression";
+    case "v1":
+      return "Ichidan Verb";
+    case "vt":
+      return "Transitive Verb";
+    default:
+      return pos;
+  }
 }

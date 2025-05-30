@@ -18,6 +18,12 @@
       "title": "Update Dictionary",
       "description": "Update the dictionary with the latest JMDict definitions.",
       "mode": "no-view"
+    },
+    {
+      "name": "test",
+      "title": "Test",
+      "description": "",
+      "mode": "view"
     }
   ],
   "dependencies": {
