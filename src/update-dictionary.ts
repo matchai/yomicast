@@ -60,6 +60,7 @@ export default async function Command() {
   console.log("Populating dictionary...");
   const success = await populateTables(db, toast);
   if (success) {
+    db.run("VACUUM;");
     await fs.promises.writeFile(DB_PATH, db.export());
   }
 

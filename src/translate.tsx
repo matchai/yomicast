@@ -17,9 +17,12 @@ type FormattedKanjiItem = {
 };
 
 async function openDb() {
-  const wasmBinary = fs.readFileSync(SQLITE_WASM_PATH);
-  const SQL = await initSqlJs({ wasmBinary });
-  return new SQL.Database(fs.readFileSync(DB_PATH));
+  // Start promises in parallel
+  const readWasm = fs.promises.readFile(SQLITE_WASM_PATH);
+  const readDb = fs.promises.readFile(DB_PATH);
+
+  const SQL = await initSqlJs({ wasmBinary: await readWasm });
+  return new SQL.Database(await readDb);
 }
 
 function search(db: Database, query: string) {
@@ -63,8 +66,18 @@ export default function Command() {
   const [query, setQuery] = useState("りんご");
   const [showingDetail, setShowingDetail] = useState(false);
 
+  // At the beginning of your Command function in translate.tsx
+  console.time("Command Startup");
+
+  // Inside the useEffect where you call openDb()
   useEffect(() => {
-    openDb().then((db) => setDb(db));
+    console.time("openDb");
+    openDb().then((db) => {
+      console.timeEnd("openDb");
+      setDb(db);
+    });
+    console.timeEnd("Command Startup"); // This will log before openDb finishes
+    // A better place for overall startup would be after setDb, but this gives an idea.
     return () => db?.close();
   }, []);
 

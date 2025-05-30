@@ -52,21 +52,30 @@ export function populateTables(db: Database, toast: Toast) {
   return new Promise<boolean>((resolve) => {
     let count = 0;
     const total = 212062; // TODO: Get the total number from somewhere more reliable
+    console.time("Populating tables");
+
+    // No need for rollback journal during initial population
+    db.run("PRAGMA journal_mode = OFF;");
+
+    // Begin single transaction for all insertions
+    db.run("BEGIN TRANSACTION;");
+    const entryStmt = db.prepare(sql`INSERT INTO entries (entry_id, data, common) VALUES (:entry_id, :data, :common);`);
+    const kanjiStmt = db.prepare(sql`INSERT INTO kanji_index (kanji_text, entry_id) VALUES (:kanji_text, :entry_id);`);
+    const kanaStmt = db.prepare(sql`INSERT INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`);
+    const glossFtsStmt = db.prepare(
+      sql`INSERT INTO gloss_fts_index (entry_id, gloss_content) VALUES (:entry_id, :gloss_content);`,
+    );
+
     const loader = loadDictionary("jmdict", EXTRACT_PATH).onMetadata((metadata) => {
-      db.run(
-        sql`INSERT OR REPLACE INTO metadata (key, value) VALUES ('version', :version), ('date', :date), ('tags', :tags);`,
-        {
-          ":version": metadata.version,
-          ":date": metadata.dictDate,
-          ":tags": JSON.stringify(metadata.tags),
-        },
-      );
+      db.run(sql`INSERT INTO metadata (key, value) VALUES ('version', :version), ('date', :date), ('tags', :tags);`, {
+        ":version": metadata.version,
+        ":date": metadata.dictDate,
+        ":tags": JSON.stringify(metadata.tags),
+      });
     });
     loader.onEntry((entry) => {
-      db.run("BEGIN TRANSACTION;");
-
       // Insert full entry data
-      db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data, common) VALUES (:entry_id, :data, :common);`, {
+      entryStmt.run({
         ":entry_id": entry.id,
         ":data": JSON.stringify(entry),
         ":common": Number(isCommon(entry)),
@@ -74,7 +83,7 @@ export function populateTables(db: Database, toast: Toast) {
 
       // Insert kanji
       entry.kanji.forEach((kanji) => {
-        db.run(sql`INSERT OR REPLACE INTO kanji_index (kanji_text, entry_id) VALUES (:kanji_text, :entry_id);`, {
+        kanjiStmt.run({
           ":kanji_text": kanji.text,
           ":entry_id": entry.id,
         });
@@ -82,7 +91,7 @@ export function populateTables(db: Database, toast: Toast) {
 
       // Insert normalized kana
       entry.kana.forEach((kana) => {
-        db.run(sql`INSERT OR REPLACE INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`, {
+        kanaStmt.run({
           ":kana_text": normalizeKana(kana.text),
           ":entry_id": entry.id,
         });
@@ -90,12 +99,10 @@ export function populateTables(db: Database, toast: Toast) {
 
       // Insert glosses into FTS index
       const glossContent = entry.sense.flatMap((s) => s.gloss.map((g) => g.text)).join(" ");
-      db.run(sql`INSERT INTO gloss_fts_index (entry_id, gloss_content) VALUES (:entry_id, :gloss_content);`, {
+      glossFtsStmt.run({
         ":entry_id": entry.id,
         ":gloss_content": glossContent,
       });
-
-      db.run("COMMIT;");
 
       count += 1;
       if (count % 1000 === 0) {
@@ -105,6 +112,8 @@ export function populateTables(db: Database, toast: Toast) {
       }
     });
     loader.onEnd(() => {
+      db.run("COMMIT;");
+      console.timeEnd("Populating tables");
       console.log(`Indexed ${count} entries.`);
       console.log("Dictionary loaded successfully.");
       resolve(true);
