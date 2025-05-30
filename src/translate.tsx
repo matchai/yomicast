@@ -5,7 +5,7 @@ import { Action, ActionPanel, List } from "@raycast/api";
 import { normalizeKana, partOfSpeechToString } from "./utils";
 import fs from "node:fs";
 import { isJapanese, isKana } from "wanakana";
-import { searchKana, searchKanji } from "./dictionary/search";
+import { searchEnglish, searchKana, searchKanji } from "./dictionary/search";
 import { JMdictWord } from "@scriptin/jmdict-simplified-types";
 
 type FormattedKanjiItem = {
@@ -25,11 +25,10 @@ async function openDb() {
 function search(db: Database, query: string) {
   const japaneseQuery = normalizeKana(query);
   if (!isJapanese(japaneseQuery)) {
-    // return searchEnglish(db, japaneseQuery);
+    return searchEnglish(db, query);
   }
 
   // TODO: Mixed kanji-kana searches as kanji FTS
-  console.log({ isKana: isKana(japaneseQuery), isJapanese: isJapanese(japaneseQuery) });
 
   if (isKana(japaneseQuery)) {
     return searchKana(db, japaneseQuery);
@@ -72,8 +71,7 @@ export default function Command() {
   const results = useMemo(() => {
     if (!db || query.trim() === "") return [];
     const res = search(db, query);
-    console.log(res);
-    return res
+    return res;
   }, [db, query]);
 
   const formattedData = results.map(formatKanjiItem) || [];

@@ -24,6 +24,23 @@ export function searchKanji(db: Database, query: string) {
   );
 }
 
+export function searchEnglish(db: Database, query: string) {
+  return queryEntries(
+    db,
+    sql`
+      SELECT
+        e.data,
+        -- Reduce rank by score of 2 if the term is common
+        (gf.rank - (e.common * 2)) AS rank
+      FROM gloss_fts_index gf
+      JOIN entries e ON gf.entry_id = e.entry_id
+      WHERE gf.gloss_fts_index MATCH :query
+      ORDER BY rank ASC LIMIT 50
+    `,
+    { ":query": query },
+  );
+}
+
 function queryEntries(db: Database, sql: string, params?: BindParams) {
   const stmt = db.prepare(sql, params);
   const results: JMdictWord[] = [];

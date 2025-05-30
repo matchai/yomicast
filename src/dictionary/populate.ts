@@ -3,6 +3,7 @@ import { Database } from "sql.js";
 import { EXTRACT_PATH } from "../constants";
 import { Toast } from "@raycast/api";
 import { normalizeKana, sql } from "../utils";
+import { JMdictWord } from "@scriptin/jmdict-simplified-types";
 
 export function createTables(db: Database) {
   return db.run(sql`
@@ -19,7 +20,8 @@ export function createTables(db: Database) {
 
     CREATE TABLE entries (
       entry_id INTEGER PRIMARY KEY,
-      data TEXT NOT NULL
+      data TEXT NOT NULL,
+      common BOOLEAN NOT NULL DEFAULT 0
     );
 
     CREATE TABLE kanji_index (
@@ -62,10 +64,12 @@ export function populateTables(db: Database, toast: Toast) {
     });
     loader.onEntry((entry) => {
       db.run("BEGIN TRANSACTION;");
+
       // Insert full entry data
-      db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data) VALUES (:entry_id, :data);`, {
+      db.run(sql`INSERT OR REPLACE INTO entries (entry_id, data, common) VALUES (:entry_id, :data, :common);`, {
         ":entry_id": entry.id,
         ":data": JSON.stringify(entry),
+        ":common": Number(isCommon(entry)),
       });
 
       // Insert kanji
@@ -83,6 +87,14 @@ export function populateTables(db: Database, toast: Toast) {
           ":entry_id": entry.id,
         });
       });
+
+      // Insert glosses into FTS index
+      const glossContent = entry.sense.flatMap((s) => s.gloss.map((g) => g.text)).join(" ");
+      db.run(sql`INSERT INTO gloss_fts_index (entry_id, gloss_content) VALUES (:entry_id, :gloss_content);`, {
+        ":entry_id": entry.id,
+        ":gloss_content": glossContent,
+      });
+
       db.run("COMMIT;");
 
       count += 1;
@@ -113,4 +125,8 @@ export function populateTables(db: Database, toast: Toast) {
       },
     };
   });
+}
+
+function isCommon(entry: JMdictWord) {
+  return entry.kana.some((kana) => kana.common) || entry.kanji.some((kanji) => kanji.common);
 }

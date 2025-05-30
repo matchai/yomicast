@@ -59,8 +59,6 @@ export async function extractDictionary(zipPath: string, outputPath: string, toa
       break;
     }
   } catch (error) {
-    console.log(error)
-
     toast.style = Toast.Style.Failure;
     toast.title = "Failed to extract dictionary";
     toast.message = "Please try again later.";
