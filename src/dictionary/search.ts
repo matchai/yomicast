@@ -37,7 +37,7 @@ export function searchEnglish(db: Database, query: string) {
       WHERE gf.gloss_fts_index MATCH :query
       ORDER BY rank ASC LIMIT 50
     `,
-    { ":query": query },
+    { ":query": `${query}*` },
   );
 }
 
