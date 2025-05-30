@@ -5,19 +5,19 @@ import fs from "node:fs";
 import initSqlJs from "sql.js";
 import { createTables, populateTables } from "./dictionary/populate";
 
-let _toast: Toast | null = null;
+let toast: Toast | null = null;
 async function updateToast(options: Toast.Options) {
-  if (_toast) {
-    _toast.title = options.title || _toast.title;
-    _toast.message = options.message || _toast.message;
-    _toast.style = options.style || _toast.style;
+  if (toast) {
+    toast.title = options.title || toast.title;
+    toast.message = options.message || toast.message;
+    toast.style = options.style || toast.style;
   } else {
-    _toast = await showToast({
+    toast = await showToast({
       style: Toast.Style.Animated,
       ...options,
     });
   }
-  return _toast;
+  return toast;
 }
 
 export default async function Command() {

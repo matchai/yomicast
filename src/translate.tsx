@@ -63,21 +63,11 @@ ${sense.gloss.map((gloss) => `1. ${gloss.text}`).join("\n")}`;
 
 export default function Command() {
   const [db, setDb] = useState<Database>();
-  const [query, setQuery] = useState("りんご");
+  const [query, setQuery] = useState("");
   const [showingDetail, setShowingDetail] = useState(false);
 
-  // At the beginning of your Command function in translate.tsx
-  console.time("Command Startup");
-
-  // Inside the useEffect where you call openDb()
   useEffect(() => {
-    console.time("openDb");
-    openDb().then((db) => {
-      console.timeEnd("openDb");
-      setDb(db);
-    });
-    console.timeEnd("Command Startup"); // This will log before openDb finishes
-    // A better place for overall startup would be after setDb, but this gives an idea.
+    openDb().then((db) => setDb(db));
     return () => db?.close();
   }, []);
 
@@ -87,7 +77,7 @@ export default function Command() {
     return res;
   }, [db, query]);
 
-  const formattedData = results.map(formatKanjiItem) || [];
+  const formattedData = results.map(formatKanjiItem);
 
   return (
     <List
