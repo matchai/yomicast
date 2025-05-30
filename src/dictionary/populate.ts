@@ -61,7 +61,9 @@ export function populateTables(db: Database, toast: Toast) {
     db.run("BEGIN TRANSACTION;");
     const entryStmt = db.prepare(sql`INSERT INTO entries (entry_id, data, common) VALUES (:entry_id, :data, :common);`);
     const kanjiStmt = db.prepare(sql`INSERT INTO kanji_index (kanji_text, entry_id) VALUES (:kanji_text, :entry_id);`);
-    const kanaStmt = db.prepare(sql`INSERT INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`);
+    const kanaStmt = db.prepare(
+      sql`INSERT OR REPLACE INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
+    );
     const glossFtsStmt = db.prepare(
       sql`INSERT INTO gloss_fts_index (entry_id, gloss_content) VALUES (:entry_id, :gloss_content);`,
     );
