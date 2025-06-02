@@ -1,9 +1,9 @@
 import { downloadFile, extractDictionary, getLatestDictionaryUrl } from "./dictionary/download";
 import { DOWNLOAD_PATH, DB_PATH, EXTRACT_PATH, SQLITE_WASM_PATH } from "./constants";
-import { showToast, Toast } from "@raycast/api";
-import fs from "node:fs";
-import initSqlJs from "sql.js";
 import { createTables, populateTables } from "./dictionary/populate";
+import { showToast, Toast } from "@raycast/api";
+import initSqlJs from "sql.js";
+import fs from "node:fs";
 
 let toast: Toast | null = null;
 async function updateToast(options: Toast.Options) {
@@ -29,7 +29,7 @@ export default async function Command() {
       message: `Progress: 0%`,
     });
 
-    const dictionaryUrl = getLatestDictionaryUrl();
+    const dictionaryUrl = await getLatestDictionaryUrl();
     await downloadFile(dictionaryUrl, DOWNLOAD_PATH, toast);
   }
 

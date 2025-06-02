@@ -4,8 +4,35 @@ import { finished } from "node:stream/promises";
 import { environment, Toast } from "@raycast/api";
 import { basename } from "node:path";
 import AdmZip from "adm-zip";
+import { showFailureToast } from "@raycast/utils";
 
-export function getLatestDictionaryUrl() {
+type Release = {
+  assets: Array<{
+    name: string;
+    browser_download_url: string;
+  }>;
+};
+
+export async function getLatestDictionaryUrl() {
+  try {
+    const latestRelease = "https://api.github.com/repos/scriptin/jmdict-simplified/releases/latest";
+    const releaseRes = await fetch(latestRelease);
+    const releaseJson = (await releaseRes.json()) as Release;
+    const enWithExamplesAsset = releaseJson.assets.find(
+      (asset: { name: string }) => asset.name.startsWith("jmdict-examples-eng-") && asset.name.endsWith(".json.zip"),
+    );
+    if (!enWithExamplesAsset) {
+      throw new Error("No suitable dictionary asset found in the latest release");
+    }
+    return enWithExamplesAsset.browser_download_url;
+  } catch (error) {
+    console.log("Failed to fetch latest dictionary:", error);
+    showFailureToast({
+      title: "Failed to find latest dictionary",
+      message: "Please try again later.",
+    });
+  }
+
   // TODO: Get the latest dictionary URL
   return "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-examples-eng-3.6.1+20250526122839.json.zip";
 }
