@@ -1,4 +1,4 @@
 - [ ] Add history support
-- [ ] Replace static dictionary download URL
+- [x] Replace static dictionary download URL
 - [x] Speed up DB population with batched insertions
 - [ ] Further populate detail view

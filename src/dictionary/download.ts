@@ -4,7 +4,6 @@ import { finished } from "node:stream/promises";
 import { environment, Toast } from "@raycast/api";
 import { basename } from "node:path";
 import AdmZip from "adm-zip";
-import { showFailureToast } from "@raycast/utils";
 
 type Release = {
   assets: Array<{
@@ -27,14 +26,7 @@ export async function getLatestDictionaryUrl() {
     return enWithExamplesAsset.browser_download_url;
   } catch (error) {
     console.log("Failed to fetch latest dictionary:", error);
-    showFailureToast({
-      title: "Failed to find latest dictionary",
-      message: "Please try again later.",
-    });
   }
-
-  // TODO: Get the latest dictionary URL
-  return "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-examples-eng-3.6.1+20250526122839.json.zip";
 }
 
 export async function downloadFile(url: string, destination: string, toast: Toast) {

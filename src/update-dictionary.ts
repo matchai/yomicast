@@ -30,6 +30,13 @@ export default async function Command() {
     });
 
     const dictionaryUrl = await getLatestDictionaryUrl();
+
+    if (!dictionaryUrl) {
+      toast.style = Toast.Style.Failure;
+      toast.title = "Failed to find latest dictionary";
+      toast.message = "Please try again later.";
+      return;
+    }
     await downloadFile(dictionaryUrl, DOWNLOAD_PATH, toast);
   }
 
