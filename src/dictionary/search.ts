@@ -30,14 +30,16 @@ export function searchEnglish(db: Database, query: string) {
     sql`
       SELECT
         e.data,
-        -- Reduce rank by score of 2 if the term is common
-        (gf.rank - (e.common * 2)) AS rank
+        -- Get the best rank for this entry from all its matching glosses.
+        -- Reduce rank by score of 2 if the term is common.
+        MIN(gf.rank - (e.common * 2)) AS rank
       FROM gloss_fts_index gf
       JOIN entries e ON gf.entry_id = e.entry_id
       WHERE gf.gloss_fts_index MATCH :query
+      GROUP BY e.entry_id -- Get one result per dictionary entry
       ORDER BY rank ASC LIMIT 20
     `,
-    { ":query": `${query}*` },
+    { ":query": `${query}` },
   );
 }
 

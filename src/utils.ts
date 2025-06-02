@@ -17,18 +17,3 @@ export function normalizeKana(text: string) {
     convertLongVowelMark: false,
   });
 }
-
-export function partOfSpeechToString(pos: string) {
-  switch (pos) {
-    case "n":
-      return "Noun";
-    case "exp":
-      return "Expression";
-    case "v1":
-      return "Ichidan Verb";
-    case "vt":
-      return "Transitive Verb";
-    default:
-      return pos;
-  }
-}

@@ -100,10 +100,14 @@ export function populateTables(db: Database, toast: Toast) {
       });
 
       // Insert glosses into FTS index
-      const glossContent = entry.sense.flatMap((s) => s.gloss.map((g) => g.text)).join(" ");
-      glossFtsStmt.run({
-        ":entry_id": entry.id,
-        ":gloss_content": glossContent,
+      entry.sense.forEach((sense) => {
+        sense.gloss.forEach((gloss) => {
+          if (!gloss.text) return;
+          glossFtsStmt.run({
+            ":entry_id": entry.id,
+            ":gloss_content": gloss.text,
+          });
+        });
       });
 
       count += 1;

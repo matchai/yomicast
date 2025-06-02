@@ -3,11 +3,11 @@ import { Readable } from "node:stream";
 import { finished } from "node:stream/promises";
 import { environment, Toast } from "@raycast/api";
 import { basename } from "node:path";
-import AdmZip from 'adm-zip'
+import AdmZip from "adm-zip";
 
 export function getLatestDictionaryUrl() {
   // TODO: Get the latest dictionary URL
-  return "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-eng-3.6.1+20250526122839.json.zip";
+  return "https://github.com/scriptin/jmdict-simplified/releases/download/3.6.1%2B20250526122839/jmdict-examples-eng-3.6.1+20250526122839.json.zip";
 }
 
 export async function downloadFile(url: string, destination: string, toast: Toast) {

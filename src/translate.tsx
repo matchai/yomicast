@@ -1,9 +1,9 @@
+import fs from "node:fs";
 import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
 import { Action, ActionPanel, List } from "@raycast/api";
-import { normalizeKana, partOfSpeechToString } from "./utils";
-import fs from "node:fs";
+import { normalizeKana } from "./utils";
 import { isJapanese, isKana } from "wanakana";
 import { searchEnglish, searchKana, searchKanji } from "./dictionary/search";
 import { JMdictWord } from "@scriptin/jmdict-simplified-types";
@@ -16,19 +16,26 @@ type FormattedKanjiItem = {
   detail: string;
 };
 
-async function openDb() {
+let db: Database | undefined;
+async function getDb() {
+  if (db) return db;
+
   // Start promises in parallel
   const readWasm = fs.promises.readFile(SQLITE_WASM_PATH);
   const readDb = fs.promises.readFile(DB_PATH);
 
   const SQL = await initSqlJs({ wasmBinary: await readWasm });
-  return new SQL.Database(await readDb);
+  db = new SQL.Database(await readDb);
+  return db;
 }
 
 function search(db: Database, query: string) {
   const japaneseQuery = normalizeKana(query);
   if (!isJapanese(japaneseQuery)) {
-    return searchEnglish(db, query);
+    console.time(`searchEnglish ${query}`);
+    const def = searchEnglish(db, query);
+    console.timeEnd(`searchEnglish ${query}`);
+    return def;
   }
 
   // TODO: Mixed kanji-kana searches as kanji FTS
@@ -40,14 +47,14 @@ function search(db: Database, query: string) {
   return searchKanji(db, japaneseQuery);
 }
 
-function formatKanjiItem(item: JMdictWord): FormattedKanjiItem {
+function formatKanjiItem(item: JMdictWord, db: Database): FormattedKanjiItem {
   const kanji = item.kanji.at(0)?.text;
   const kana = item.kana.at(0)?.text || "No kana";
   const definition = item.sense.at(0)?.gloss.at(0)?.text;
   const detail = `## ${kanji || kana}
   ${item.sense
     .map((sense) => {
-      return `### ${sense.partOfSpeech.map(partOfSpeechToString).join(", ")}
+      return `### ${sense.partOfSpeech.map((pos) => simplifyPartOfSpeech(pos, db)).join(", ")}
 ${sense.gloss.map((gloss) => `1. ${gloss.text}`).join("\n")}`;
     })
     .join("\n\n")}`;
@@ -61,13 +68,26 @@ ${sense.gloss.map((gloss) => `1. ${gloss.text}`).join("\n")}`;
   };
 }
 
+function simplifyPartOfSpeech(pos: string, db: Database) {
+  const getPosMap = db.exec("SELECT value from metadata WHERE key = ? LIMIT 1", ["tags"]);
+  const posMap = JSON.parse((getPosMap.at(0)?.values.at(0)?.at(0) as string) ?? "{}");
+
+  // Override values where the database's are too verbose
+  switch (pos) {
+    case "n":
+      return "Noun";
+  }
+
+  return posMap[pos];
+}
+
 export default function Command() {
   const [db, setDb] = useState<Database>();
   const [query, setQuery] = useState("");
   const [showingDetail, setShowingDetail] = useState(false);
 
   useEffect(() => {
-    openDb().then((db) => setDb(db));
+    getDb().then((db) => setDb(db));
     return () => db?.close();
   }, []);
 
@@ -77,7 +97,7 @@ export default function Command() {
     return res;
   }, [db, query]);
 
-  const formattedData = results.map(formatKanjiItem);
+  const formattedData = results.map((item) => formatKanjiItem(item, db!));
 
   return (
     <List
