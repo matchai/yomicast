@@ -30,9 +30,9 @@ export function searchEnglish(db: Database, query: string) {
     sql`
       SELECT
         e.data,
-        -- Get the best rank for this entry from all its matching glosses.
         -- Reduce rank by score of 2 if the term is common.
-        MIN(gf.rank - (e.common)) AS rank
+        -- Reduce rank by score of 1 if the term has kanji.
+        MIN(gf.rank - common_forms_count - e.has_kanji) AS rank
       FROM gloss_fts_index gf
       JOIN entries e ON gf.entry_id = e.entry_id
       WHERE gf.gloss_fts_index MATCH :query

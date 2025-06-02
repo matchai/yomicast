@@ -21,7 +21,8 @@ export function createTables(db: Database) {
     CREATE TABLE entries (
       entry_id INTEGER PRIMARY KEY,
       data TEXT NOT NULL,
-      common BOOLEAN NOT NULL DEFAULT 0
+      common_forms_count INTEGER NOT NULL DEFAULT 0,
+      has_kanji BOOLEAN NOT NULL DEFAULT 0
     );
 
     CREATE TABLE kanji_index (
@@ -59,7 +60,9 @@ export function populateTables(db: Database, toast: Toast) {
 
     // Begin single transaction for all insertions
     db.run("BEGIN TRANSACTION;");
-    const entryStmt = db.prepare(sql`INSERT INTO entries (entry_id, data, common) VALUES (:entry_id, :data, :common);`);
+    const entryStmt = db.prepare(
+      sql`INSERT INTO entries (entry_id, data, common_forms_count, has_kanji) VALUES (:entry_id, :data, :common_forms_count, :has_kanji);`,
+    );
     const kanjiStmt = db.prepare(sql`INSERT INTO kanji_index (kanji_text, entry_id) VALUES (:kanji_text, :entry_id);`);
     const kanaStmt = db.prepare(
       sql`INSERT OR REPLACE INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
@@ -80,7 +83,8 @@ export function populateTables(db: Database, toast: Toast) {
       entryStmt.run({
         ":entry_id": entry.id,
         ":data": JSON.stringify(entry),
-        ":common": Number(isCommon(entry)),
+        ":common_forms_count": countCommonForms(entry),
+        ":has_kanji": Number(entry.kanji.length > 0),
       });
 
       // Insert kanji
@@ -142,6 +146,13 @@ export function populateTables(db: Database, toast: Toast) {
   });
 }
 
-function isCommon(entry: JMdictWord) {
-  return entry.kana.some((kana) => kana.common) || entry.kanji.some((kanji) => kanji.common);
+function countCommonForms(entry: JMdictWord) {
+  let count = 0;
+  entry.kana.forEach((kana) => {
+    if (kana.common) count += 1;
+  });
+  entry.kanji.forEach((kanji) => {
+    if (kanji.common) count += 1;
+  });
+  return count;
 }
