@@ -31,7 +31,7 @@
     "@raycast/utils": "^1.17.0",
     "@scriptin/jmdict-simplified-loader": "^3.6.1",
     "adm-zip": "^0.5.16",
-    "sql.js": "1.7.0",
+    "sql.js": "1.13.0",
     "wanakana": "^5.3.1"
   },
   "devDependencies": {
@@ -40,7 +40,7 @@
     "@types/adm-zip": "^0.5.7",
     "@types/node": "22.13.10",
     "@types/react": "19.0.10",
-    "@types/sql.js": "1.4.3",
+    "@types/sql.js": "1.4.9",
     "eslint": "^9.22.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
