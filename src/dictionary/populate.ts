@@ -43,6 +43,7 @@ export function createTables(db: Database) {
 
     CREATE VIRTUAL TABLE gloss_fts_index USING fts5(
       entry_id UNINDEXED,
+      sense_idx UNINDEXED,
       gloss_content,
       tokenize = 'unicode61'
     );
@@ -68,7 +69,7 @@ export function populateTables(db: Database, toast: Toast) {
       sql`INSERT OR REPLACE INTO kana_index (kana_text, entry_id) VALUES (:kana_text, :entry_id);`,
     );
     const glossFtsStmt = db.prepare(
-      sql`INSERT INTO gloss_fts_index (entry_id, gloss_content) VALUES (:entry_id, :gloss_content);`,
+      sql`INSERT INTO gloss_fts_index (entry_id, sense_idx, gloss_content) VALUES (:entry_id, :sense_idx, :gloss_content);`,
     );
 
     const loader = loadDictionary("jmdict", EXTRACT_PATH).onMetadata((metadata) => {
@@ -105,10 +106,11 @@ export function populateTables(db: Database, toast: Toast) {
 
       // Insert glosses into FTS index
       entry.sense.forEach((sense) => {
-        sense.gloss.forEach((gloss) => {
+        sense.gloss.forEach((gloss, senseIndex) => {
           if (!gloss.text) return;
           glossFtsStmt.run({
             ":entry_id": entry.id,
+            ":sense_idx": senseIndex,
             ":gloss_content": gloss.text,
           });
         });

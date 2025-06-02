@@ -30,16 +30,17 @@ export function searchEnglish(db: Database, query: string) {
     sql`
       SELECT
         e.data,
-        -- Reduce rank by score of 2 if the term is common.
-        -- Reduce rank by score of 1 if the term has kanji.
-        MIN(gf.rank - common_forms_count - e.has_kanji) AS rank
+        -- Boost (lower rank) for entries with many common forms.
+        -- Boost (lower rank) for entries with kanji.
+        -- Penalize (higher rank) for non-primary senses.
+        MIN(gf.rank - common_forms_count - e.has_kanji + (gf.sense_idx * 0.2)) AS rank
       FROM gloss_fts_index gf
       JOIN entries e ON gf.entry_id = e.entry_id
       WHERE gf.gloss_fts_index MATCH :query
       GROUP BY e.entry_id -- Get one result per dictionary entry
       ORDER BY rank ASC LIMIT 20
     `,
-    { ":query": `${query}` },
+    { ":query": query },
   );
 }
 
