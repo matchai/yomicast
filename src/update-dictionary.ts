@@ -22,7 +22,7 @@ export default async function Command() {
     title: "Downloading latest dictionary...",
     message: `Progress: 0%`,
     primaryAction: {
-      title: "Cancel",
+      title: "Cancel Update",
       onAction: () => {
         abortController.abort();
       },

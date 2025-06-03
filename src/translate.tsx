@@ -92,7 +92,7 @@ export default function Command() {
       <List>
         <List.EmptyView
           title="Dictionary not set up"
-          description="Please run the update command to set up the dictionary."
+          description='Press "Return" to set up the dictionary.'
           actions={
             <ActionPanel>
               <Action

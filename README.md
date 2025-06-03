@@ -2,13 +2,23 @@
 
 Offline Japanese-English dictionary lookup. Yomitan's instant search within Raycast.
 
-Search kaji, kana, and English terms without an internet connection.
+Search kanji, kana, romaji, and English terms without an internet connection.
 
 ### Getting Started
 
 1. Run the `Update Dictionary` command
-2. Search for Japanese/English translations
+2. Search for Japanese-English translations
 
-### Inspired By
+### Thank you
 
-- ensk-is extension
+- [**Ensk.is Raycast extension**](https://www.raycast.com/jokull/ensk-is): inspiration on the full-text search approach
+- [**jmdict-simplified**](https://github.com/scriptin/jmdict-simplified): JSON-structured version of JMDict
+
+### License
+
+### JMdict and JMnedict
+
+The original XML files - **JMdict.xml**, **JMdict_e.xml**, **JMdict_e_examp.xml**,and **JMnedict.xml** -
+are the property of the Electronic Dictionary Research and Development Group,
+and are used in conformance with the Group's [license](http://www.edrdg.org/edrdg/licence.html).
+Project started in 1991 by Jim Breen.
