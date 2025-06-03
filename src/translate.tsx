@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { DB_PATH, SQLITE_WASM_PATH } from "./constants";
 import { useEffect, useMemo, useState } from "react";
 import initSqlJs, { Database } from "sql.js";
-import { Action, ActionPanel, List } from "@raycast/api";
+import { Action, ActionPanel, launchCommand, LaunchType, List } from "@raycast/api";
 import { normalizeKana } from "./utils";
 import { isJapanese, isKana } from "wanakana";
 import { searchEnglish, searchKana, searchKanji } from "./dictionary/search";
@@ -15,6 +15,10 @@ type FormattedKanjiItem = {
   definition?: string;
   detail: string;
 };
+
+function isDbSetup() {
+  return fs.existsSync(DB_PATH);
+}
 
 let db: Database | undefined;
 async function getDb() {
@@ -82,6 +86,28 @@ function simplifyPartOfSpeech(pos: string, db: Database) {
 }
 
 export default function Command() {
+  const [isSetup] = useState(isDbSetup);
+  if (!isSetup) {
+    return (
+      <List>
+        <List.EmptyView
+          title="Dictionary not set up"
+          description="Please run the update command to set up the dictionary."
+          actions={
+            <ActionPanel>
+              <Action
+                title="Update Dictionary"
+                onAction={() => {
+                  launchCommand({ name: "update-dictionary", type: LaunchType.UserInitiated });
+                }}
+              />
+            </ActionPanel>
+          }
+        />
+      </List>
+    );
+  }
+
   const [db, setDb] = useState<Database>();
   const [query, setQuery] = useState("");
   const [showingDetail, setShowingDetail] = useState(false);

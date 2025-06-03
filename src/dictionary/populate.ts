@@ -50,7 +50,15 @@ export function createTables(db: Database) {
   `);
 }
 
-export function populateTables(db: Database, toast: Toast) {
+export function populateTables(db: Database, toast: Toast, abortSignal: AbortSignal) {
+  if (abortSignal.aborted) {
+    return false;
+  }
+
+  console.log("Creating database tables...");
+  createTables(db);
+
+  console.log("Populating dictionary...");
   return new Promise<boolean>((resolve) => {
     let count = 0;
     const total = 212062; // TODO: Get the total number from somewhere more reliable
@@ -134,17 +142,17 @@ export function populateTables(db: Database, toast: Toast) {
       console.error("Failed to parse dictionary:", error);
       resolve(false);
     });
-
-    toast.primaryAction = {
-      title: "Cancel Indexing",
-      onAction: () => {
+    abortSignal.addEventListener(
+      "abort",
+      () => {
+        console.log("Aborting dictionary indexing...");
         loader.parser.destroy();
-        toast.style = Toast.Style.Failure;
-        toast.title = "Dictionary indexing cancelled";
-        toast.message = "";
+        db.close();
+
         resolve(false);
       },
-    };
+      { once: true },
+    );
   });
 }
 

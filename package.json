@@ -1,11 +1,18 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "yomicast",
-  "title": "Yomicast",
+  "title": "Yomicast - Offline Japanese-English Dictionary",
   "description": "Offline Japanese-English dictionary lookup. Yomitan's instant search within Raycast. Search kaji, kana, and English terms without an internet connection.",
   "icon": "extension-icon.png",
   "author": "matchai",
   "license": "MIT",
+  "keywords": [
+    "japanese",
+    "dictionary",
+    "offline",
+    "jmdict",
+    "jisho"
+  ],
   "commands": [
     {
       "name": "translate",
@@ -17,7 +24,8 @@
       "name": "update-dictionary",
       "title": "Update Dictionary",
       "description": "Update the dictionary with the latest JMDict definitions.",
-      "mode": "no-view"
+      "mode": "no-view",
+      "interval": "7d"
     },
     {
       "name": "test",
