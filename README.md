@@ -14,7 +14,7 @@ Search kanji, kana, romaji, and English terms without an internet connection.
 - [**Ensk.is Raycast extension**](https://www.raycast.com/jokull/ensk-is): inspiration on the full-text search approach
 - [**jmdict-simplified**](https://github.com/scriptin/jmdict-simplified): JSON-structured version of JMDict
 
-### License
+## License
 
 ### JMdict and JMnedict
 
