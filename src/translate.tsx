@@ -6,7 +6,16 @@ import { Action, ActionPanel, launchCommand, LaunchType, List } from "@raycast/a
 import { normalizeKana } from "./utils";
 import { isJapanese, isKana } from "wanakana";
 import { searchEnglish, searchKana, searchKanji } from "./dictionary/search";
-import { JMdictWord } from "@scriptin/jmdict-simplified-types";
+import { JMdictSense, JMdictWord } from "@scriptin/jmdict-simplified-types";
+import dedent from "ts-dedent";
+
+type SenseWithExamples = JMdictSense & {
+  examples?: {
+    source: { type: string; value: string };
+    text: string;
+    sentences: { land: "jpn" | "eng"; text: string }[];
+  }[];
+};
 
 type FormattedKanjiItem = {
   id: string;
@@ -42,8 +51,6 @@ function search(db: Database, query: string) {
     return def;
   }
 
-  // TODO: Mixed kanji-kana searches as kanji FTS
-
   if (isKana(japaneseQuery)) {
     return searchKana(db, japaneseQuery);
   }
@@ -55,13 +62,41 @@ function formatKanjiItem(item: JMdictWord, db: Database): FormattedKanjiItem {
   const kanji = item.kanji.at(0)?.text;
   const kana = item.kana.at(0)?.text || "No kana";
   const definition = item.sense.at(0)?.gloss.at(0)?.text;
-  const detail = `## ${kanji || kana}
-  ${item.sense
-    .map((sense) => {
-      return `### ${sense.partOfSpeech.map((pos) => simplifyPartOfSpeech(pos, db)).join(", ")}
-${sense.gloss.map((gloss) => `1. ${gloss.text}`).join("\n")}`;
-    })
-    .join("\n\n")}`;
+
+  let glossCount = 0;
+  const formatGlosses = (sense: SenseWithExamples) => {
+    const formattedGlosses = [];
+    for (const gloss of sense.gloss) {
+      glossCount += 1;
+      formattedGlosses.push(`${glossCount}. ${gloss.text}`);
+    }
+
+    const example = sense.examples?.at(0)?.sentences.map(({ land, text }) => ({ land, text }));
+    return dedent`
+      ${formattedGlosses.join("\n")}
+        > ${example?.find((s) => s.land === "jpn")?.text || ""}
+        >
+        > ${example?.find((s) => s.land === "eng")?.text || ""}
+    `;
+  };
+
+  const formatSense = (sense: JMdictSense) => {
+    const pos = sense.partOfSpeech.map((pos) => simplifyPartOfSpeech(pos, db)).join(", ");
+
+    return dedent`
+      ##### ${pos}
+      ${formatGlosses(sense)}
+    `;
+  };
+
+  const sensesMarkdown = item.sense.map(formatSense).join("\n\n");
+
+  const detail = dedent`
+    ## ${kanji || kana}
+    ${kanji ? kana : ""}
+
+    ${sensesMarkdown}
+  `;
 
   return {
     id: item.id,
